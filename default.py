@@ -16,60 +16,73 @@
 import os
 import xbmc
 import xbmcaddon
+import xbmcgui
 from time import sleep
-
+from natsort import natural_sort
 
 ADDON = xbmcaddon.Addon()
 ADDON_ID = ADDON.getAddonInfo('id')
 FOLDER = ADDON.getSetting('autoresume.save.folder').encode('utf-8', 'ignore')
 FREQUENCY = int(ADDON.getSetting('autoresume.frequency'))
+DELETESTOP = ADDON.getSetting('autoresume.deletestop') == 'true' or False
 PATH = os.path.join(FOLDER, 'autoresume.txt')
+SEEKWAIT = 5
 
 def resume():
-  for x in range(0,120):
     if os.path.exists(FOLDER):
       if os.path.exists(PATH):
+          
         # Read from autoresume.txt.
         f = open(PATH, 'r')
-        mediaFile = f.readline().rstrip('\n')
-        position = float(f.readline())
+        mediafile = f.readline().strip()
+        position = float(f.readline().strip())
         f.close()
-        # Play file.
-        xbmc.Player().play(mediaFile)
-        while (not xbmc.Player().isPlaying()):
-          sleep(0.5)
-        sleep(1)
-        # Seek to last recorded position.
-        xbmc.Player().seekTime(position)
-        sleep(1)
-        # Make sure it actually got there.
-        if abs(position - xbmc.Player().getTime()) > 30:
-          xbmc.Player().seekTime(position)
-      break
-    else:
-      # If the folder didn't exist maybe we need to wait longer for the drive to be mounted.
-      sleep(5)
+        
+        # Read directory to create a playlist
+        filename = os.path.basename(mediafile)
+        dirname = os.path.dirname(mediafile)
+        dirlist = natural_sort(os.listdir(dirname))
+        
+        pl = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        i = 0
+        
+        # Get the media file offset in the playlist
+        for f in dirlist:
+            pl.add('{}/{}'.format(dirname, f), index = i)
+
+            if f == filename:
+                playoffset = i
+            i += 1
+
+        #xbmc.executebuiltin('XBMC.Notification(Playing {} at {} ...)'.format(filename, position))
+
+        mp = xbmc.Player()
+        mp.play(pl, xbmcgui.ListItem(), startpos = playoffset)
+        sleep(SEEKWAIT)
+        mp.seekTime(position)
+
 
 def recordPosition():
-  if xbmc.Player().isPlaying():
-    mediaFile = xbmc.Player().getPlayingFile()
-    position = xbmc.Player().getTime()
+  mp = xbmc.Player()
+    
+  if mp.isPlaying():
+    mediafile = mp.getPlayingFile()
+    position = mp.getTime()
+
     # Write info to file
     f = open(PATH, 'w')
-    f.write(mediaFile)
-    f.write('\n')
-    f.write(repr(position))
+    f.write(mediafile + '\n' + repr(position))
     f.close()
   else:
-    if os.path.exists(PATH):
+    if os.path.exists(PATH) and DELETESTOP:
       os.remove(PATH)
 
 def log(msg):
   xbmc.log("%s: %s" % (ADDON_ID, msg), xbmc.LOGDEBUG)
 
-
 if __name__ == "__main__":
-  resume()
-  while (not xbmc.abortRequested):
-    recordPosition()
-    sleep(FREQUENCY)
+    resume()
+    while (not xbmc.abortRequested):
+        recordPosition()
+        sleep(FREQUENCY)
+
