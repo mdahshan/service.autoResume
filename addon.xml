@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="service.autoresume"
+<addon id="service.autoResume"
        name="AutoResume"
-       version="0.7.4"
-       provider-name="gatorfreak">
+       version="0.8.0"
+       provider-name="mdahshan">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
   </requires>
@@ -10,6 +10,9 @@
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <summary>Automatically resume playback even after abrupt shutdown.</summary>
-    <description>This service will automatically resume playback when XBMC starts. Even if the media was never stopped and XBMC was not shutdown (i.e. power was cut).</description>
+    <description>This service will automatically resume playback when XBMC starts. Even if the media was never stopped and XBMC was not shutdown (i.e. power was cut).
+    This is a forked version based on the service.autoResume addon developed by gatorfreak.
+    The main change is supporting resuming the next media file in the directory, using natural sorting for directory listing.
+    </description>
   </extension>
 </addon>
